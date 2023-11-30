@@ -40,11 +40,7 @@ impl HttpHandler for MacProxy {
 }
 
 #[async_trait]
-impl WebSocketHandler for MacProxy {
-    async fn handle_message(&mut self, _ctx: &WebSocketContext, msg: Message) -> Option<Message> {
-        Some(msg)
-    }
-}
+impl WebSocketHandler for MacProxy {}
 
 pub async fn run(addr: &str) -> anyhow::Result<()> {
     let private_key_bytes: &[u8] = include_bytes!("./ca/mac_proxy.key");
