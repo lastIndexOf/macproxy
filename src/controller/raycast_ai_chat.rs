@@ -1,6 +1,6 @@
 use hudsucker::hyper::{self, Body, Request, Response, StatusCode};
 use serde_json::Value;
-use tracing::error;
+use tracing::{error, info};
 
 pub async fn handle_raycast_ai_chat(req: Request<Body>) -> Response<Body> {
     match do_handle_raycast_ai_chat(req).await {
@@ -19,13 +19,22 @@ pub async fn handle_raycast_ai_chat(req: Request<Body>) -> Response<Body> {
 pub async fn do_handle_raycast_ai_chat(req: Request<Body>) -> anyhow::Result<Response<Body>> {
     let (req, mut body) = req.into_parts();
 
-    let mut payload: Value = serde_json::from_slice(&hyper::body::to_bytes(body).await?)?;
+    let bytes = hyper::body::to_bytes(body).await?;
+    let mut content_len = bytes.len();
+    let mut payload: Value = serde_json::from_slice(&bytes)?;
 
-    payload["model"] = Value::String(String::from("gpt-4-1106-preview"));
+    body = if payload["source"] == "ai_chat" {
+        info!("proxy raycast ai chat model to gpt-4-turbo");
 
-    let bytes = serde_json::to_vec(&payload)?;
-    let content_len = bytes.len();
-    body = bytes.into();
+        payload["model"] = Value::String(String::from("gpt-4-1106-preview"));
+
+        let bytes = serde_json::to_vec(&payload)?;
+        content_len = bytes.len();
+        body = bytes.into();
+        body
+    } else {
+        bytes.into()
+    };
 
     let mut client = reqwest::Client::builder()
         .proxy(reqwest::Proxy::all("http://127.0.0.1:7890")?)

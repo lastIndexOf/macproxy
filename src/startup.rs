@@ -11,6 +11,7 @@ use tracing::error;
 
 use crate::controller::handle_raycast_ai_chat;
 
+// TODO: 关闭前恢复全局代理
 async fn shutdown_signal() {
     tokio::signal::ctrl_c()
         .await

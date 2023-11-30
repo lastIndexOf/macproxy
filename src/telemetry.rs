@@ -23,6 +23,7 @@ where
     let log_dir = settings.log_dir.clone();
     let log_file_prefix = "mac_proxy.log_";
 
+    // TODO: 只创建文件没有日志写入
     let appender = rolling::hourly(log_dir, log_file_prefix);
     let (non_blocking_appender, _guard) = non_blocking(appender);
 
@@ -32,8 +33,8 @@ where
         .with(env_layer)
         .with(tracing_subscriber::fmt::layer().with_writer(non_blocking_appender))
         .with(tracing_subscriber::fmt::layer().with_writer(writer.clone()))
-        // .with(fmt_layer)
-        // .with(JsonStorageLayer)
+    // .with(fmt_layer)
+    // .with(JsonStorageLayer)
 }
 
 pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
