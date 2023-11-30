@@ -1,15 +1,15 @@
-use futures::StreamExt;
 use hudsucker::{
     async_trait::async_trait,
     certificate_authority::OpensslAuthority,
-    hyper::{Body, Request, Response},
+    hyper::{Body, Request},
     openssl::{hash::MessageDigest, pkey::PKey, x509::X509},
     tokio_tungstenite::tungstenite::Message,
     *,
 };
-use serde_json::Value;
 use std::net::SocketAddr;
-use tracing::{error, info};
+use tracing::error;
+
+use crate::controller::handle_raycast_ai_chat;
 
 async fn shutdown_signal() {
     tokio::signal::ctrl_c()
@@ -18,38 +18,29 @@ async fn shutdown_signal() {
 }
 
 #[derive(Clone)]
-struct LogHandler;
+struct MacProxy;
 
 #[async_trait]
-impl HttpHandler for LogHandler {
+impl HttpHandler for MacProxy {
     async fn handle_request(
         &mut self,
         _ctx: &HttpContext,
         req: Request<Body>,
     ) -> RequestOrResponse {
+        let method = req.method();
         let url = req.uri().to_string();
 
-        match &url[..] {
-            "https://backend.raycast.com/api/v1/ai/chat_completions" => {
-                let (req, mut body) = req.into_parts();
-
-                let mut payload: Value =
-                    serde_json::from_slice(&hyper::body::to_bytes(body).await.unwrap()).unwrap();
-                payload["model"] = Value::String(String::from("gpt-4-1106-preview"));
-
-                body = serde_json::to_vec(&payload).unwrap().into();
-
-                return Request::from_parts(req, body).into();
+        match (method, &url[..]) {
+            (&hyper::Method::POST, "https://backend.raycast.com/api/v1/ai/chat_completions") => {
+                handle_raycast_ai_chat(req).await.into()
             }
-            _ => {}
+            _ => req.into(),
         }
-
-        req.into()
     }
 }
 
 #[async_trait]
-impl WebSocketHandler for LogHandler {
+impl WebSocketHandler for MacProxy {
     async fn handle_message(&mut self, _ctx: &WebSocketContext, msg: Message) -> Option<Message> {
         Some(msg)
     }
@@ -68,11 +59,11 @@ pub async fn run(addr: &str) -> anyhow::Result<()> {
         .with_addr(addr.parse::<SocketAddr>()?)
         .with_rustls_client()
         .with_ca(ca)
-        .with_http_handler(LogHandler)
+        .with_http_handler(MacProxy)
         .build();
 
     if let Err(e) = proxy.start(shutdown_signal()).await {
-        error!("{}", e);
+        error!("unexpected error when proxy -- {}", e);
     }
 
     Ok(())
