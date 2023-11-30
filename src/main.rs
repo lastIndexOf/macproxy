@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
     let subscriber = get_subscriber("info", &settings, std::io::stdout);
     init_subscriber(subscriber);
 
-    set_global_proxy(&settings)?;
+    // set_global_proxy(&settings)?;
     let listener = TcpListener::bind(format!("{}:{}", settings.app.host, settings.app.port))?;
 
     info!(
