@@ -1,5 +1,3 @@
-use std::net::TcpListener;
-
 use mac_proxy::{
     configuration::get_configuration,
     global_proxy::set_global_proxy,
@@ -16,14 +14,11 @@ async fn main() -> anyhow::Result<()> {
     init_subscriber(subscriber);
 
     // set_global_proxy(&settings)?;
-    let listener = TcpListener::bind(format!("{}:{}", settings.app.host, settings.app.port))?;
 
     info!(
         "server running at http://{}:{}",
         settings.app.host, settings.app.port
     );
 
-    run(listener)?.await?;
-
-    Ok(())
+    Ok(run(&format!("{}:{}", settings.app.host, settings.app.port)).await?)
 }
