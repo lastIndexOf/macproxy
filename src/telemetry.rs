@@ -31,7 +31,7 @@ where
     let appender = rolling::hourly(log_dir, log_file_prefix);
     let (non_blocking_appender, _guard) = non_blocking(appender);
 
-    create_retention_timer(settings.log_dir.clone());
+    // create_retention_timer(settings.log_dir.clone());
 
     (
         Registry::default()

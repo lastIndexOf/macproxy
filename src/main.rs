@@ -6,7 +6,7 @@ use mac_proxy::{
 };
 use tracing::info;
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let settings = get_configuration()?;
 
