@@ -13,12 +13,16 @@ async fn main() -> anyhow::Result<()> {
     let subscriber = get_subscriber("info", &settings, std::io::stdout);
     init_subscriber(subscriber);
 
-    set_global_proxy(&settings)?;
+    let origin_proxy = set_global_proxy(&settings.app)?;
 
     info!(
         "server running at http://{}:{}",
         settings.app.host, settings.app.port
     );
 
-    Ok(run(&format!("{}:{}", settings.app.host, settings.app.port)).await?)
+    Ok(run(
+        &format!("{}:{}", settings.app.host, settings.app.port),
+        origin_proxy,
+    )
+    .await?)
 }

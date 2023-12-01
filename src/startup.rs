@@ -3,19 +3,23 @@ use hudsucker::{
     certificate_authority::OpensslAuthority,
     hyper::{Body, Request},
     openssl::{hash::MessageDigest, pkey::PKey, x509::X509},
-    tokio_tungstenite::tungstenite::Message,
     *,
 };
 use std::net::SocketAddr;
-use tracing::error;
+use tracing::{error, info};
 
-use crate::controller::handle_raycast_ai_chat;
+use crate::{
+    configuration::AppSettings, controller::handle_raycast_ai_chat, global_proxy::set_global_proxy,
+};
 
-// TODO: 关闭前恢复全局代理
-async fn shutdown_signal() {
+async fn shutdown_signal(origin_proxy: AppSettings) {
     tokio::signal::ctrl_c()
         .await
         .expect("Failed to install CTRL+C signal handler");
+
+    info!("Shutting down...");
+
+    set_global_proxy(&origin_proxy).expect("revert global proxy failed");
 }
 
 #[derive(Clone)]
@@ -43,7 +47,7 @@ impl HttpHandler for MacProxy {
 #[async_trait]
 impl WebSocketHandler for MacProxy {}
 
-pub async fn run(addr: &str) -> anyhow::Result<()> {
+pub async fn run(addr: &str, origin_proxy: AppSettings) -> anyhow::Result<()> {
     let private_key_bytes: &[u8] = include_bytes!("./ca/mac_proxy.key");
     let ca_cert_bytes: &[u8] = include_bytes!("./ca/mac_proxy.crt");
     let private_key =
@@ -59,7 +63,7 @@ pub async fn run(addr: &str) -> anyhow::Result<()> {
         .with_http_handler(MacProxy)
         .build();
 
-    if let Err(e) = proxy.start(shutdown_signal()).await {
+    if let Err(e) = proxy.start(shutdown_signal(origin_proxy)).await {
         error!("unexpected error when proxy -- {}", e);
     }
 
