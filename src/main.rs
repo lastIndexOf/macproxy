@@ -10,7 +10,7 @@ use tracing::info;
 async fn main() -> anyhow::Result<()> {
     let settings = get_configuration()?;
 
-    let subscriber = get_subscriber("info", &settings, std::io::stdout);
+    let (subscriber, _guard) = get_subscriber("info", &settings, std::io::stdout);
     init_subscriber(subscriber);
 
     let origin_proxy = set_global_proxy(&settings.app)?;
