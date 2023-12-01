@@ -2,5 +2,6 @@
   "app": {
     "port": 12506
   },
-  "log_dir": "./logs"
+  "log_dir": "./logs",
+  "stdout_level": "debug"
 }

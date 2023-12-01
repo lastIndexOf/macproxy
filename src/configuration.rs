@@ -3,12 +3,13 @@ use std::env;
 use anyhow::Result;
 use config::{Config, Environment};
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, level_filters::LevelFilter};
 
 #[derive(Deserialize, Debug)]
 pub struct Settings {
     pub app: AppSettings,
     pub log_dir: String,
+    pub stdout_level: StdoutLevel,
 }
 
 #[derive(Deserialize, Debug)]
@@ -17,9 +18,33 @@ pub struct AppSettings {
     pub port: u16,
 }
 
+#[derive(Deserialize, Debug, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum StdoutLevel {
+    Off,
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
 pub enum AppEnv {
     Development,
     Production,
+}
+
+impl From<StdoutLevel> for LevelFilter {
+    fn from(value: StdoutLevel) -> Self {
+        match value {
+            StdoutLevel::Off => LevelFilter::OFF,
+            StdoutLevel::Error => LevelFilter::ERROR,
+            StdoutLevel::Warn => LevelFilter::WARN,
+            StdoutLevel::Info => LevelFilter::INFO,
+            StdoutLevel::Debug => LevelFilter::DEBUG,
+            StdoutLevel::Trace => LevelFilter::TRACE,
+        }
+    }
 }
 
 impl TryFrom<String> for AppEnv {

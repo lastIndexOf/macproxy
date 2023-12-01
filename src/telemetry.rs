@@ -1,4 +1,4 @@
-use tracing::{dispatcher::set_global_default, Subscriber};
+use tracing::{dispatcher::set_global_default, level_filters::LevelFilter, Subscriber};
 use tracing_appender::{
     non_blocking,
     // non_blocking::{self, WorkerGuard},
@@ -7,7 +7,7 @@ use tracing_appender::{
 // use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_log::LogTracer;
 use tracing_subscriber::{
-    fmt::MakeWriter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Registry,
+    fmt::MakeWriter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer, Registry,
 };
 
 use crate::configuration::Settings;
@@ -20,6 +20,7 @@ pub fn get_subscriber<W>(
 where
     W: for<'writer> MakeWriter<'writer> + Clone + Send + Sync + 'static,
 {
+    let fmt_filter: LevelFilter = settings.stdout_level.into();
     let env_layer =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(env_filter));
     // let fmt_layer = BunyanFormattingLayer::new("mac_proxy".into(), writer.clone());
@@ -32,17 +33,17 @@ where
     let (non_blocking_appender, _guard) = non_blocking(appender);
 
     // create_retention_timer(settings.log_dir.clone());
+    let registry = Registry::default()
+        .with(env_layer)
+        .with(tracing_subscriber::fmt::layer().with_writer(non_blocking_appender))
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_writer(writer.clone())
+                .with_filter(fmt_filter),
+        );
+    // .with(JsonStorageLayer);
 
-    (
-        Registry::default()
-            .with(env_layer)
-            .with(tracing_subscriber::fmt::layer().with_writer(non_blocking_appender))
-            .with(
-                tracing_subscriber::fmt::layer().with_writer(writer.clone()), // .with_filter(LevelFilter::WARN),
-            ), // .with(fmt_layer)
-        // .with(JsonStorageLayer)
-        _guard,
-    )
+    (registry, _guard)
 }
 
 pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
