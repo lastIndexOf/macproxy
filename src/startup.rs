@@ -25,6 +25,11 @@ async fn shutdown_signal(origin_proxy: AppSettings) {
 #[derive(Clone)]
 struct MacProxy;
 
+// TODO 代理某些接口会直接报 443
+// 1. icloud 相关接口
+// 2. 苹果其他接口
+// 3. 天气接口
+// 4. iphone 模拟器打开后访问不了 google
 #[async_trait]
 impl HttpHandler for MacProxy {
     async fn handle_request(

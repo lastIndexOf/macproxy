@@ -32,7 +32,7 @@ where
     let appender = rolling::hourly(log_dir, log_file_prefix);
     let (non_blocking_appender, _guard) = non_blocking(appender);
 
-    // create_retention_timer(settings.log_dir.clone());
+    create_retention_timer(settings.log_dir.clone());
     let registry = Registry::default()
         .with(env_layer)
         .with(tracing_subscriber::fmt::layer().with_writer(non_blocking_appender))
@@ -57,7 +57,7 @@ fn create_retention_timer(log_dir: String) {
 
     tokio::spawn(async move {
         let log_dir = std::path::Path::new(&log_dir);
-        let seven_days = Duration::from_secs(60 * 60 * 24 * 7);
+        let seven_days = Duration::from_secs(60 * 60 * 12 * 1);
 
         loop {
             tokio::time::sleep(Duration::from_secs(6 * 6 * 10)).await;

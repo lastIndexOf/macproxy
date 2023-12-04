@@ -6,7 +6,7 @@ use mac_proxy::{
 };
 use tracing::info;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 12)]
 async fn main() -> anyhow::Result<()> {
     let settings = get_configuration()?;
 
